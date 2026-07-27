@@ -1,0 +1,33 @@
+services:
+  garage:
+    image: dxflrs/garage:${GARAGE_VERSION}
+    container_name: garage
+    environment:
+      # Windows/WSL2 monte garage.toml en lecture "monde" ; Garage refuse de
+      # demarrer si le fichier de secrets est world-readable. On leve le controle
+      # (acceptable en local ; en prod on met garage.toml en chmod 600).
+      GARAGE_ALLOW_WORLD_READABLE_SECRETS: "true"
+    volumes:
+      - ./garage.toml:/etc/garage.toml:ro
+      - garage_meta:/var/lib/garage/meta
+      - garage_data:/var/lib/garage/data
+    ports:
+      - "${GARAGE_S3_PORT}:3900"
+      - "${GARAGE_ADMIN_PORT}:3903"
+
+  garage-webui:
+    image: khairul169/garage-webui:${GARAGE_WEBUI_VERSION}
+    container_name: garage-webui
+    depends_on:
+      - garage
+    volumes:
+      - ./garage.toml:/etc/garage.toml:ro
+    environment:
+      API_BASE_URL: "http://garage:3903"
+      S3_ENDPOINT_URL: "http://garage:3900"
+    ports:
+      - "${GARAGE_WEBUI_PORT}:3909"
+
+volumes:
+  garage_meta:
+  garage_data:
