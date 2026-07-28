@@ -1,0 +1,15 @@
+# Résultats générés localement
+results/*.tsv
+results/*.txt
+!results/RESULTATS_ATTENDUS.md
+
+# Fichiers système / IDE
+.DS_Store
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Les datasets sont exclus du dépôt GitHub standard.
+# Ils sont présents uniquement dans l'archive complète.
+data/*.gz
+!data/README.md

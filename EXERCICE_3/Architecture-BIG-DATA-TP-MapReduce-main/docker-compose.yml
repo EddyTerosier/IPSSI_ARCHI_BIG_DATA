@@ -1,0 +1,108 @@
+services:
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    platform: linux/amd64
+    container_name: mr-namenode
+    hostname: namenode
+    restart: unless-stopped
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+      - ./data:/data:ro
+      - ./jobs:/jobs:ro
+      - ./container-scripts:/container-scripts:ro
+      - ./results:/results
+    environment:
+      CLUSTER_NAME: tp-mapreduce
+    env_file:
+      - ./hadoop.env
+    networks:
+      - hadoop
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    platform: linux/amd64
+    container_name: mr-datanode
+    hostname: datanode
+    restart: unless-stopped
+    depends_on:
+      - namenode
+    ports:
+      - "9864:9864"
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870"
+    env_file:
+      - ./hadoop.env
+    networks:
+      - hadoop
+
+  resourcemanager:
+    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
+    platform: linux/amd64
+    container_name: mr-resourcemanager
+    hostname: resourcemanager
+    restart: unless-stopped
+    depends_on:
+      - namenode
+      - datanode
+    ports:
+      - "8088:8088"
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode:9864"
+    env_file:
+      - ./hadoop.env
+    networks:
+      - hadoop
+
+  nodemanager:
+    build:
+      context: ./docker/nodemanager
+    platform: linux/amd64
+    container_name: mr-nodemanager
+    hostname: nodemanager
+    restart: unless-stopped
+    depends_on:
+      - namenode
+      - datanode
+      - resourcemanager
+    ports:
+      - "8042:8042"
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode:9864 resourcemanager:8088"
+    env_file:
+      - ./hadoop.env
+    networks:
+      - hadoop
+
+  historyserver:
+    image: bde2020/hadoop-historyserver:2.0.0-hadoop3.2.1-java8
+    platform: linux/amd64
+    container_name: mr-historyserver
+    hostname: historyserver
+    restart: unless-stopped
+    depends_on:
+      - namenode
+      - datanode
+      - resourcemanager
+    ports:
+      - "8188:8188"
+    volumes:
+      - hadoop_historyserver:/hadoop/yarn/timeline
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode:9864 resourcemanager:8088"
+    env_file:
+      - ./hadoop.env
+    networks:
+      - hadoop
+
+volumes:
+  hadoop_namenode:
+  hadoop_datanode:
+  hadoop_historyserver:
+
+networks:
+  hadoop:
